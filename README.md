@@ -65,7 +65,7 @@ Queries are scored based on multiple signals; the higher score determines routin
 - Enable Developer mode
 - Click Load unpacked → select this project folder
   
-3. ** Use SmartRouter **
+3. **Use SmartRouter**
 - In Chrome’s omnibox, type: `<your search query>`
 - SmartRouter:
   - Opens the recommended engine (Google or Perplexity) in your current tab
