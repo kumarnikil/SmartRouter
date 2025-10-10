@@ -34,11 +34,7 @@ function getAndLogRecommendation(query) {
     // ------------------------------------------------------------
     // 2. Question Detection
     // ------------------------------------------------------------
-    const questionWords = [
-        "who", "what", "when", "where", "why", "how",
-        "is", "are", "can", "does", "do", "should", "could",
-        "would", "will", "did", "may", "might"
-    ];
+    const questionWords = ["who", "what", "when", "where", "why", "how", "is", "are", "can", "does", "do", "should", "could", "would", "will", "did", "may", "might"];
 
     if (questionWords.some(w => q.startsWith(w + " "))) {
         perplexityScore += 4; // strongly favors AI reasoning
@@ -47,23 +43,13 @@ function getAndLogRecommendation(query) {
     // ------------------------------------------------------------
     // 3. Instructional / Explanatory Phrases
     // ------------------------------------------------------------
-    const aiPatterns = [
-        "explain", "compare", "difference between", "pros and cons",
-        "summarize", "why does", "how does", "step by step",
-        "how to", "what is the best", "guide", "tutorial",
-        "analyze", "generate", "improve", "rewrite"
-    ];
+    const aiPatterns = ["explain", "compare", "difference between", "pros and cons", "summarize", "why does", "how does", "step by step", "how to", "what is the best", "guide", "tutorial", "analyze", "generate", "improve", "rewrite"];
     if (aiPatterns.some(p => q.includes(p))) perplexityScore += 3;
 
     // ------------------------------------------------------------
     // 4. Navigational / Transactional / Local Intent
     // ------------------------------------------------------------
-    const googlePatterns = [
-        "youtube", "reddit", "twitter", "wikipedia",
-        "login", "download", "near me", "price",
-        "reviews", "map", "directions", "store", "schedule",
-        "news", "restaurant", "hotel", "flight", "ticket"
-    ];
+    const googlePatterns = ["youtube", "reddit", "twitter", "wikipedia", "login", "download", "near me", "price", "reviews", "map", "directions", "store", "schedule", "news", "restaurant", "hotel", "flight", "ticket"];
     if (googlePatterns.some(p => q.includes(p))) googleScore += 4;
 
     // ------------------------------------------------------------
@@ -81,10 +67,7 @@ function getAndLogRecommendation(query) {
     // ------------------------------------------------------------
     // 7. Recency or factual lookups (better for Google)
     // ------------------------------------------------------------
-    const realTimePatterns = [
-        "today", "yesterday", "tomorrow", "latest",
-        "current", "now", "2025", "news", "price", "stock", "score"
-    ];
+    const realTimePatterns = ["today", "yesterday", "tomorrow", "latest", "current", "now", "2025", "news", "price", "stock", "score"];
     if (realTimePatterns.some(p => q.includes(p))) googleScore += 3;
 
     // ------------------------------------------------------------
