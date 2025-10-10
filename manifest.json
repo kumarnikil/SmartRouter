@@ -6,7 +6,7 @@
     "permissions": ["tabs"],
     "chrome_settings_overrides": {
       "search_provider": {
-        "name": "Smart Search",
+        "name": "Smart",
         "keyword": "ss",
         "favicon_url": "https://www.perplexity.ai/favicon.ico",
         "search_url": "https://www.perplexity.ai/search?q={searchTerms}",

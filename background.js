@@ -1,40 +1,51 @@
 importScripts('logic/recommendation.js');
 
-// Global state
-let recTab = null;
-let altTab = null;
-const closeTimerMs = 7000; // 5s
+// TODO: Cleanliness - manage into seperate Tab Object
+let recTabId = null;
+let recTabUrl = null;
+let altTabId = null;
+let altTabUrl = null;
+
+// TODO: Controllable by the GUi
+const closeTimerMs = 7000; // 7s
 const closeTimers = {}; // tabId to timerId
 
 chrome.tabs.onUpdated.addListener((_, changeInfo, currTab) => {
     if (changeInfo.status !== "loading") return;
     if (!currTab.url) return;
 
-    console.log("checking here tabId " + getTabId(currTab), " and tab.id " + getTabId(currTab));
-
     try {
-        const url = new URL(currTab.url);
-        if (!url.hostname.includes("perplexity.ai")) return;
-        if (!url.searchParams.has("q")) return;
+        const plexUrl = new URL(currTab.url);
+        if (!plexUrl.hostname.includes("perplexity.ai")) return;
+        if (!plexUrl.searchParams.has("q")) return;
+        const query = plexUrl.searchParams.get("q");
 
-        const query = url.searchParams.get("q");
-        const recommendation = getRecommendation(query);
-        const isRecGoogle = recommendation === "g";
-        console.log(`Recommendation: ${recommendation} for query "${query}"`);
+        // get recommendation, for tab main or background placement 
+        const rec = getAndLogRecommendation(query);
+        const isRecGoogle = rec === "g";
+
+        const googUrlString = `https://www.google.com/search?q=${encodeURIComponent(query)}`
+        const googUrl = new URL(googUrlString);
+
         chrome.tabs.create({
-            url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-            active: isRecGoogle // make foreground Google, if recommended
+            url: googUrlString,
+            active: isRecGoogle
 
-        }, (newTab) => {
+        }).then((googTab) => {
             if (isRecGoogle) {
-                recTab = newTab;
-                altTab = currTab;
+                // TODO: Cleanliness - manage into seperate Tab Object
+                recTabId = googTab.id;
+                recTabUrl = googUrl;
+                altTabId = currTab.id;
+                altTabUrl = plexUrl;
 
             } else {
-                recTab = currTab;
-                altTab = newTab;
+                recTabId = currTab.id;
+                recTabUrl = plexUrl;
+                altTabId = googTab.id;
+                altTabUrl = googUrl;
             }
-            cancelAndScheduleClose(recTab, altTab);
+            cancelAndScheduleClose(recTabId, altTabId);
         });
 
     } catch (e) {
@@ -47,20 +58,16 @@ chrome.tabs.onUpdated.addListener((_, changeInfo, currTab) => {
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
     try {
         const activeTab = await chrome.tabs.get(activeInfo.tabId);
-        console.log(`User switched to tab ${activeTab.id}: ${activeTab.title} (${activeTab.url})`);
-
         const activeTabId = getTabId(activeTab);
-        const recTabId = getTabId(recTab);
-        const altTabId = getTabId(altTab);
 
         if (recTabId !== activeTabId && altTabId !== activeTabId) return;
-        console.log("tabId switched to is one of ours!");
+        log(`User switched to managed tab ${activeTab.id}: ${activeTab.title} (${activeTab.url})`);
 
         if (activeTabId === recTabId) {
-            cancelAndScheduleClose(recTab, altTab);
+            cancelAndScheduleClose(recTabId, altTabId);
         }
         else if (activeTabId === altTabId) {
-            cancelAndScheduleClose(altTab, recTab);
+            cancelAndScheduleClose(altTabId, recTabId);
         }
 
     } catch (e) {
@@ -69,60 +76,102 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 // listen for tab closures and clear state/timers if it's one of ours
-chrome.tabs.onRemoved.addListener((closedTabId, removeInfo) => {
-    const recTabId = getTabId(recTab);
-    const altTabId = getTabId(altTab);
-
+chrome.tabs.onRemoved.addListener((closedTabId, _) => {
     if (closedTabId === recTabId) {
-        console.log(`🧹 Recommended tab closed: ${closedTabId}`);
-        recTab = null;
+        logFinalRecommendation(altTabId, altTabUrl, false);
+
     } else if (closedTabId === altTabId) {
-        console.log(`🧹 Alternative tab closed: ${closedTabId}`);
-        altTab = null;
+        logFinalRecommendation(recTabId, recTabUrl, true);
+
     } else {
-        console.log(`Unrelated tab closed: ${closedTabId}`);
+        log(`Unrelated tab closed: ${closedTabId}`);
     }
+    resetTabs();
 });
 
 // utility functions
-function cancelAndScheduleClose(cancelCloseTab, scheduleCloseTab) {
-    cancelClose(cancelCloseTab);
-    if (scheduleCloseTab) scheduleClose(scheduleCloseTab, closeTimerMs);
+function cancelAndScheduleClose(cancelCloseTabId, scheduleCloseTabId) {
+    cancelClose(cancelCloseTabId);
+    if (scheduleCloseTabId) scheduleClose(scheduleCloseTabId, closeTimerMs);
 }
 
-function cancelClose(tab) {
-    const tabId = getTabId(tab);
-
+function cancelClose(tabId) {
     if (closeTimers[tabId]) {
       clearTimeout(closeTimers[tabId]); // find out why this isn't working well.
       delete closeTimers[tabId];
-      console.log(`🛑 Cancelled close for tab ${tabId}`);
     }
 }
 
-function scheduleClose(tab, delayMs) {
+function scheduleClose(tabId, delayMs) {
     // cancel any existing timer first
-    cancelClose(tab);
-
-    const tabId = getTabId(tab);
+    cancelClose(tabId);
   
     closeTimers[tabId] = setTimeout(() => {
       chrome.tabs.remove(tabId, () => {
         if (chrome.runtime.lastError) {
           console.warn(`Could not close tab ${tabId}:`, chrome.runtime.lastError.message);
         } else {
-          console.log(`Closed tab ${tabId}`);
+        //   log(`Closed tab ${tabId}`);
         }
       });
       delete closeTimers[tabId];
     }, delayMs);
   
-    console.log(`⏳ Scheduled close for tab ${tabId} in ${delayMs / 1000}s`);
+    // log(`⏳ Scheduled close for tab ${tabId} in ${delayMs / 1000}s`);
   }
 
-// utlity methods
+// helper methods
+function logTabContext(tab, label) {
+    if (!tab) {
+        log(label + ": <null>");
+        return;
+    }
+    let hostname = '';
+    try {
+        if (tab.url) hostname = new URL(tab.url).hostname;
+    } catch (_) {}
+    log(label + `: id=${tab.id}, url=${tab.url || '<empty>'}, hostname=${hostname}, title=${tab.title || ''}`);
+}
+
+function log(msg)  {
+    console.log(msg);
+}
+
+function logFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
+    try {
+        const url = new URL(chosenTabUrl);
+        const hostname = url.hostname;
+        const query = url.searchParams.get('q') || '';
+        
+        // Determine engine and emoji
+        let engine, emoji;
+        if (hostname.includes('google.')) {
+            engine = 'Google';
+            emoji = '🔍';
+        } else if (hostname.includes('perplexity.ai')) {
+            engine = 'Perplexity';
+            emoji = '🤖';
+        } else {
+            engine = hostname;
+            emoji = '🌐';
+        }
+        
+        const choiceType = isRecTab ? 'RECOMMENDED' : 'ALTERNATIVE';
+        log(`RESULT: 🎯 User chose ${emoji} ${engine} (${choiceType}) for "${query}" (Tab ${chosenTabId}) - ${new Date().toLocaleTimeString()}`);
+        
+    } catch (e) {
+        log(`RESULT: 🎯 User chose tab ${chosenTabId}, but failed to parse URL: ${chosenTabUrl}`);
+    }
+}
+
 function getTabId(tab) {
     if (tab == null) return null;
     return tab.id;
+}
 
+function resetTabs() {
+    recTabId = null;
+    recTabUrl = null;
+    altTabId = null;
+    altTabUrl = null;
 }
