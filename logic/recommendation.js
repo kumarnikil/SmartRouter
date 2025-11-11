@@ -47,7 +47,7 @@ function getAndLogRecommendation(query) {
         realTime: 'g',
         memory: 'p'
     };
-    const recommendation = defaultCategoryMap[category] || 'g';
+    const recommendation = defaultCategoryMap[category] || 'g'; // default to Google for unknown category
 
     console.log(`Category: ${category}, Recommendation: ${recommendation.toUpperCase()} for "${query}"`);
     return recommendation;
