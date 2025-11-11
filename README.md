@@ -17,18 +17,6 @@ The recommended engine opens in your current tab; the alternate opens briefly in
 
 Queries are scored based on multiple signals; the higher score determines routing.
 
-### Scoring Factors
-- **Length**
-  - ≤2 words → +2 Google  
-  - ≥6 words → +2 Perplexity  
-- **Question words** (`how`, `why`, `what`, etc.) → +3 Perplexity  
-- **Instructional phrases** (`explain`, `difference between`, `how to`) → +2 Perplexity  
-- **Navigational / transactional** (`price`, `login`, `reddit`, `map`, `reviews`) → +3 Google  
-- **Real-time / factual** (`today`, `score`, `stock`, `weather`) → +2 Google  
-- **Final rule:**  
-  - `perplexityScore > googleScore` → **Perplexity**  
-  - otherwise → **Google**
-
 ---
 
 ## Configurable
