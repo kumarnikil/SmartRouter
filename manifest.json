@@ -1,13 +1,13 @@
 {
     "name": "Search Router Extension",
-    "description": "Routes searches between Google and Perplexity based on logic.",
+    "description": "Routes search queries adaptively to Google or Perplexity!",
     "version": "1.0",
     "manifest_version": 3,
-    "permissions": ["tabs"],
+    "permissions": ["tabs", "storage", "activeTab"],
     "chrome_settings_overrides": {
       "search_provider": {
-        "name": "Smart",
-        "keyword": "ss",
+        "name": "SmartRouter",
+        "keyword": "sr",
         "favicon_url": "https://www.perplexity.ai/favicon.ico",
         "search_url": "https://www.perplexity.ai/search?q={searchTerms}",
         "encoding": "UTF-8",
@@ -17,5 +17,5 @@
     "background": {
       "service_worker": "background.js"
     }
-  }
+}
   

@@ -1,15 +1,42 @@
 importScripts('logic/recommendation.js');
 
+const CATEGORY_HISTORY_KEY = "CATEGORY_HISTORY_KEY"
+let categoryHistory = {};
+
 // TODO: Cleanliness - manage into seperate Tab Object
 let recTabId = null;
 let recTabUrl = null;
 let altTabId = null;
 let altTabUrl = null;
 
-// TODO: Controllable by the GUi
-const closeTimerMs = 7000; // 7s
-const closeTimers = {}; // tabId to timerId
+// TODO: Cleanliness - manage global record of query, category, recommendation
+let tabCategory = null;
 
+// TODO: Controllable by the GUI
+let closeTimerMs = 7000;  // fallback default, 7s
+let closeTimers = {};     // tabId to timerId
+
+// *** CHROME EVENTS HANDLING *** //s
+
+// on startup event
+chrome.runtime.onStartup.addListener(() => {
+    log("🚀 startup event triggered");
+    loadCategoryHistory();
+});
+
+// on extension installed / uploaded event (for dev-only)
+chrome.runtime.onInstalled.addListener(() => {
+    log("🧩 extension installed or updated");
+    loadCategoryHistory();
+});
+
+// on suspend event (before shutdown)
+chrome.runtime.onSuspend.addListener(() => {
+    log("💾 saving category history before shutdown...");
+    saveCategoryHistory();
+});
+
+// on query entered 
 chrome.tabs.onUpdated.addListener((_, changeInfo, currTab) => {
     if (changeInfo.status !== "loading") return;
     if (!currTab.url) return;
@@ -21,7 +48,8 @@ chrome.tabs.onUpdated.addListener((_, changeInfo, currTab) => {
         const query = plexUrl.searchParams.get("q");
 
         // get recommendation, for tab main or background placement 
-        const rec = getAndLogRecommendation(query);
+        const [category, rec] = getAndLogRecommendation(query, categoryHistory);
+        tabCategory = category;
         const isRecGoogle = rec === "g";
 
         const googUrlString = `https://www.google.com/search?q=${encodeURIComponent(query)}`
@@ -78,7 +106,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 // listen for tab closures and clear state/timers if it's one of ours
 chrome.tabs.onRemoved.addListener((closedTabId, _) => {
     if (closedTabId === recTabId) {
-        logFinalRecommendation(altTabId, altTabUrl, false);
+        logFinalRecommendation(altTabId, altTabUrl, false); // recommended tab closed
 
     } else if (closedTabId === altTabId) {
         logFinalRecommendation(recTabId, recTabUrl, true);
@@ -89,7 +117,10 @@ chrome.tabs.onRemoved.addListener((closedTabId, _) => {
     resetTabs();
 });
 
-// utility functions
+// *** *** //
+
+// *** UTILITY METHODS *** //
+
 function cancelAndScheduleClose(cancelCloseTabId, scheduleCloseTabId) {
     cancelClose(cancelCloseTabId);
     if (scheduleCloseTabId) scheduleClose(scheduleCloseTabId, closeTimerMs);
@@ -97,30 +128,61 @@ function cancelAndScheduleClose(cancelCloseTabId, scheduleCloseTabId) {
 
 function cancelClose(tabId) {
     if (closeTimers[tabId]) {
-      clearTimeout(closeTimers[tabId]); // find out why this isn't working well.
-      delete closeTimers[tabId];
+        clearTimeout(closeTimers[tabId]); // BUGTODO: find out why this isn't working well.
+        delete closeTimers[tabId];
     }
 }
 
 function scheduleClose(tabId, delayMs) {
     // cancel any existing timer first
     cancelClose(tabId);
-  
-    closeTimers[tabId] = setTimeout(() => {
-      chrome.tabs.remove(tabId, () => {
-        if (chrome.runtime.lastError) {
-          console.warn(`Could not close tab ${tabId}:`, chrome.runtime.lastError.message);
-        } else {
-        //   log(`Closed tab ${tabId}`);
-        }
-      });
-      delete closeTimers[tabId];
-    }, delayMs);
-  
-    // log(`⏳ Scheduled close for tab ${tabId} in ${delayMs / 1000}s`);
-  }
 
-// helper methods
+    closeTimers[tabId] = setTimeout(() => {
+        chrome.tabs.remove(tabId, () => {
+            if (chrome.runtime.lastError) {
+                console.warn(`Could not close tab ${tabId}:`, chrome.runtime.lastError.message);
+            } 
+        });
+        delete closeTimers[tabId];
+    }, delayMs);
+}
+
+function handleUserChoice(category, sd) {
+    if (!categoryHistory[category]) {
+        categoryHistory[category] = { g: 0, p: 0 };
+    }
+    categoryHistory[category][sd] += 1;
+}
+
+function loadCategoryHistory() {
+    try {
+        chrome.storage.local.get([CATEGORY_HISTORY_KEY]).then((data) => {
+            if (data.CATEGORY_HISTORY_KEY) {
+                categoryHistory = data.CATEGORY_HISTORY_KEY;
+                log("✅ Category history loaded from storage:", JSON.stringify(categoryHistory));
+
+            } else {
+                categoryHistory = {};
+                log("❌ No existing category history found. Starting fresh.");
+            }
+        });
+
+    } catch (err) {
+        console.error("Failed to load category history:", err);
+        categoryHistory = {};
+    }
+}
+
+// save category history on shutdown
+function saveCategoryHistory() {
+    chrome.storage.local.set({ CATEGORY_HISTORY_KEY: categoryHistory }, () => {
+        console.log("💾 Category history saved:", JSON.stringify(categoryHistory));
+    });
+}
+
+// *** *** //
+
+// *** HELPER METHODS *** //
 function logTabContext(tab, label) {
     if (!tab) {
         log(label + ": <null>");
@@ -129,11 +191,11 @@ function logTabContext(tab, label) {
     let hostname = '';
     try {
         if (tab.url) hostname = new URL(tab.url).hostname;
-    } catch (_) {}
+    } catch (_) { }
     log(label + `: id=${tab.id}, url=${tab.url || '<empty>'}, hostname=${hostname}, title=${tab.title || ''}`);
 }
 
-function log(msg)  {
+function log(msg) {
     console.log(msg);
 }
 
@@ -142,23 +204,27 @@ function logFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
         const url = new URL(chosenTabUrl);
         const hostname = url.hostname;
         const query = url.searchParams.get('q') || '';
-        
+
         // Determine engine and emoji
         let engine, emoji;
         if (hostname.includes('google.')) {
             engine = 'Google';
             emoji = '🔍';
+            handleUserChoice(tabCategory, 'g');
+
         } else if (hostname.includes('perplexity.ai')) {
             engine = 'Perplexity';
             emoji = '🤖';
+            handleUserChoice(tabCategory, 'p');
+
         } else {
             engine = hostname;
             emoji = '🌐';
         }
-        
+
         const choiceType = isRecTab ? 'RECOMMENDED' : 'ALTERNATIVE';
-        log(`RESULT: 🎯 User chose ${emoji} ${engine} (${choiceType}) for "${query}" (Tab ${chosenTabId}) - ${new Date().toLocaleTimeString()}`);
-        
+        log(`RESULT: 🎯 User chose ${emoji} ${engine} (${choiceType}) for "${query}" (Tab ${chosenTabId}) - ${new Date().toLocaleTimeString()} with Updated History ${JSON.stringify(categoryHistory)}`);
+
     } catch (e) {
         log(`RESULT: 🎯 User chose tab ${chosenTabId}, but failed to parse URL: ${chosenTabUrl}`);
     }
@@ -174,4 +240,5 @@ function resetTabs() {
     recTabUrl = null;
     altTabId = null;
     altTabUrl = null;
+    tabCategory = null;
 }

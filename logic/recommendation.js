@@ -1,17 +1,14 @@
-function getAndLogRecommendation(query) {
+importScripts('constants/intentKeywords.js');
+
+const NUM_OF_PAST_QUERIES_TO_TRIGGER_ADAPTION = 1; // number of queries processed before historical count is included
+const PAST_QUERIES_RATIO = 0.5; //
+
+function getAndLogRecommendation(query, categoryHistory) {
     const q = query.trim().toLowerCase();
 
     // *** CATEGORY SELECTION *** //
     let category = 'informational'; // default
-    const questionWords = ["who", "what", "when", "where", "why", "how", "is", "are", "can", "does", "do", "should", "could", "would", "will", "did", "may", "might"];
     
-    const informationalPatterns = ["explain", "compare", "difference between", "pros and cons", "summarize", "why does", "how does", "step by step", "how to", "what is the best", "guide", "tutorial", "analyze", "generate", "improve", "rewrite"];
-    const navigationalPatterns = ["youtube", "reddit", "twitter", "wikipedia", "login", "download", "map", "directions", ".com", ".org", ".edu"];
-    const transactionalPatterns = ["buy", "order", "ticket", "register", "download", "price", "schedule"];
-    const commercialPatterns = ["best", "reviews", "top", "compare"];
-    const generativePatterns = ["summarize", "rewrite", "generate", "improve", "explain like"];
-    const realTimePatterns = ["today", "yesterday", "tomorrow", "latest", "current", "now", "news", "stock", "score"];
-
     // simple scoring
     let scores = {
         informational: 0,
@@ -33,23 +30,24 @@ function getAndLogRecommendation(query) {
     realTimePatterns.forEach(p => { if (q.includes(p)) scores.realTime += 3; });
 
     // select highest score
-    category = Object.keys(scores).reduce((a,b) => scores[a] > scores[b] ? a : b);
-    
+    category = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+
     // *** SD SELECTION (BASED ON CATEGORY) *** //
+    const defaultRec = defaultCategoryMap[category] || 'g'; // default to Google for unknown category
 
-    // TODO: Incorporate Thomson Sampling into weights here
-    const defaultCategoryMap = {
-        informational: 'p', // perplexity
-        navigational: 'g',  // google
-        transactional: 'g',
-        commercial: 'g',
-        generative: 'p',
-        realTime: 'g',
-        memory: 'p'
-    };
-    const recommendation = defaultCategoryMap[category] || 'g'; // default to Google for unknown category
+    // *** Apply Basic Category-based Thomsom Sampling *** //
+    const history = categoryHistory[category] || { g: 0, p: 0 };
+    const total = history.g + history.p;
 
-    console.log(`Category: ${category}, Recommendation: ${recommendation.toUpperCase()} for "${query}"`);
-    return recommendation;
+    let recommendation = defaultRec;
+    if (total >= NUM_OF_PAST_QUERIES_TO_TRIGGER_ADAPTION) {  // only adapt after enough samples
+        const ratioG = history.g / total;
+        const ratioP = history.p / total;
+
+        if (ratioG > PAST_QUERIES_RATIO) recommendation = 'g';
+        else if (ratioP > PAST_QUERIES_RATIO) recommendation = 'p';
+    }
+
+    log(`Category: ${category}, Recommendation: ${recommendation.toUpperCase()} for "${query}"`);
+    return [category, recommendation];
 }
-
