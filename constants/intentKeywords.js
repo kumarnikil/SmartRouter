@@ -7,6 +7,8 @@ const defaultCategoryMap = {
   medical: 'p'
 };
 
+// TODO: replace hardcoded keywords with generalised category-specific entity recognition (NER)
+
 // generated via initial keywords manually, then expanded with ChatGPT few-shot prompting
 const questionWords = [
   "who", "what", "when", "where", "why", "how",
@@ -45,45 +47,45 @@ const realTimePatterns = [
   "forecast", "weather", "traffic", "streaming", "events", "results"
 ];
 const medicalPatterns = [
-  // General health terms
+  // general health terms
   "injury", "hurt", "pain", "ache", "soreness", "symptom",
   "ill", "sick", "condition", "diagnose", "health problem",
   "medical", "treatment", "medicine", "first aid",
   "what should i do", "how to treat", "cure", "heal", "remedy",
   "when to see a doctor", "doctor", "urgent care",
 
-  // Injuries + trauma
+  // injuries + trauma
   "broke", "fracture", "sprain", "strain", "twisted", "dislocated",
   "cut", "deep cut", "laceration", "bruise", "bleeding",
   "burn", "scald", "blister", "choking", "concussion",
   "swollen", "swelling", "stitches", "scar", "rash",
   "infection", "infected",
 
-  // Sickness & symptoms
+  // sickness / symptoms
   "fever", "vomit", "vomiting", "diarrhea", "nausea", "dizzy",
   "cough", "sore throat", "runny nose", "congestion",
   "shortness of breath", "chest pain", "migraine", "headache",
   "earache", "toothache",
 
-  // Mental & neurological
+  // mental / neurological
   "panic attack", "anxiety attack", "depression",
   "seizure", "faint", "fainting",
 
-  // Allergies / reactions
+  // allergies / reactions
   "allergic", "allergy", "hives", "anaphylactic", "anaphylaxis",
 
-  // Body parts (for injury context)
+  // body parts (for injury context)
   "toe", "foot", "ankle", "leg", "knee", "hip",
   "finger", "hand", "wrist", "arm", "elbow", "shoulder",
   "back", "spine", "neck", "head", "forehead",
   "eye", "ear", "nose", "mouth", "jaw",
   "rib", "chest", "abdomen", "stomach",
 
-  // Medication queries
+  // medication queries
   "ibuprofen", "advil", "tylenol", "acetaminophen", "aspirin",
   "antibiotics", "bandage", "ice pack", "splint",
 
-  // Health procedure advice
+  // health procedure advice
   "clean the wound", "apply pressure", "immobilize",
   "elevate", "rest and ice", "sterilize",
   "stop the bleeding", "wrap", "tape"
