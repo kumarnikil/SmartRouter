@@ -6,7 +6,7 @@ The recommended engine opens in your current tab; the alternate opens briefly in
 
 ---
 
-## File Structure
+## File Structure (Important Files)
 - `background.js`: manages active and background tabs, user behavior logging, and timed tab closures.  
 - `recommendation.js`: houses the decision logic for routing between Google and Perplexity based on semantic factors (query length, keywords, intent, etc.).  
 - `manifest.json`: sets up the Chrome extension metadata, permissions, and default omnibox keyword (`ss`).  
@@ -15,16 +15,31 @@ The recommended engine opens in your current tab; the alternate opens briefly in
 
 ## How `recommendation.js` Works
 
-Queries are scored based on multiple signals; the higher score determines routing.
+1️⃣ **Query Categorization**
+
+Queries are classified into categories using keyword heuristics:
+
+Informational, Medical/Safety → Perplexity
+
+Navigational, Commercial, Real-time → Google
+
+
+2️⃣ **Adaptive Learning**
+
+The extension tracks your historic choices per category:
+{ g: # times Google used, p: # times Perplexity used }
+
+Once enough history exists, SmartRouter recommends the engine you’ve shown preference for — improving over time.
+
+Output format: [category, "g" | "p"]
 
 ---
 
 ## Configurable
 
-- Adjust keyword weights → `logic/recommendation.js`  
-- Change background tab timer (`closeTimerMs`) → `background.js`  
-- Future enhancement: integrate **Thompson Sampling** for adaptive learning
-
+- Adjust keyword → `constants/intentKeywords.js`  
+- Change background tab timer (`closeTimerMs`) → `background.js`
+  
 ---
 
 ## Example Queries
@@ -66,7 +81,7 @@ Queries are scored based on multiple signals; the higher score determines routin
 ## Future Work
 
 ### 1. Learning & Adaptivity
-- Implement **Thompson Sampling** or other multi-armed bandit algorithms to refine routing based on real-world performance.  
+- Implement real **Thompson Sampling** or other multi-armed bandit algorithms to refine routing based on real-world performance.  
 - Develop **context-aware adaptation** for user preferences, query domains, and historical behavior.  
 - Introduce lightweight feedback loops (e.g., implicit click tracking or optional explicit ratings).
 
