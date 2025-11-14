@@ -29,13 +29,12 @@ function getAndLogRecommendation(query, categoryHistory) {
     generativePatterns.forEach(p => { if (q.includes(p)) scores.generative += 3; });
     realTimePatterns.forEach(p => { if (q.includes(p)) scores.realTime += 3; });
 
-    // select highest score
-    category = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+    category = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b); // select highest score
 
     // *** SD SELECTION (BASED ON CATEGORY) *** //
     const defaultRec = defaultCategoryMap[category] || 'g'; // default to Google for unknown category
 
-    // *** Apply Basic Category-based Thomsom Sampling *** //
+    // *** Apply basic category-based Thomsom Sampling *** //
     const history = categoryHistory[category] || { g: 0, p: 0 };
     const total = history.g + history.p;
 
