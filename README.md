@@ -59,7 +59,7 @@ Output format: [category, "g" | "p"]
 
 1. **Clone the repository**  
    ```bash
-   https://github.com/kumarnikil/SmartRouter.git
+   git clone https://github.com/kumarnikil/SmartRouter.git
    cd SmartRouter/
    ```
 
