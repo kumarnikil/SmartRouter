@@ -15,8 +15,8 @@ function getAndLogRecommendation(query, categoryHistory) {
         navigational: 0,
         transactional: 0,
         commercial: 0,
-        generative: 0,
         realTime: 0,
+        medical: 0,
     };
 
     // question detection
@@ -26,8 +26,8 @@ function getAndLogRecommendation(query, categoryHistory) {
     navigationalPatterns.forEach(p => { if (q.includes(p)) scores.navigational += 3; });
     transactionalPatterns.forEach(p => { if (q.includes(p)) scores.transactional += 3; });
     commercialPatterns.forEach(p => { if (q.includes(p)) scores.commercial += 3; });
-    generativePatterns.forEach(p => { if (q.includes(p)) scores.generative += 3; });
     realTimePatterns.forEach(p => { if (q.includes(p)) scores.realTime += 3; });
+    medicalPatterns.forEach(p => { if (q.includes(p)) scores.medical += 3; });
 
     category = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b); // select highest score
 
