@@ -7,7 +7,7 @@ const defaultCategoryMap = {
   medical: 'p'
 };
 
-// generated via initial manual inputs with ChatGPT.
+// generated via initial keywords manually, then expanded with ChatGPT few-shot prompting
 const questionWords = [
   "who", "what", "when", "where", "why", "how",
   "is", "are", "can", "does", "do", "should", 
