@@ -30,12 +30,6 @@ chrome.runtime.onInstalled.addListener(() => {
     loadCategoryHistory();
 });
 
-// on suspend event (before shutdown)
-chrome.runtime.onSuspend.addListener(() => {
-    log("💾 saving category history before shutdown...");
-    saveCategoryHistory();
-});
-
 // on query entered 
 chrome.tabs.onUpdated.addListener((_, changeInfo, currTab) => {
     if (changeInfo.status !== "loading") return;
@@ -106,10 +100,10 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 // listen for tab closures and clear state/timers if it's one of ours
 chrome.tabs.onRemoved.addListener((closedTabId, _) => {
     if (closedTabId === recTabId) {
-        logFinalRecommendation(altTabId, altTabUrl, false); // recommended tab closed
+        handleFinalRecommendation(altTabId, altTabUrl, false); // recommended tab closed
 
     } else if (closedTabId === altTabId) {
-        logFinalRecommendation(recTabId, recTabUrl, true);
+        handleFinalRecommendation(recTabId, recTabUrl, true);
 
     } else {
         log(`Unrelated tab closed: ${closedTabId}`);
@@ -199,7 +193,7 @@ function log(msg) {
     console.log(msg);
 }
 
-function logFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
+function handleFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
     try {
         const url = new URL(chosenTabUrl);
         const hostname = url.hostname;
@@ -225,6 +219,9 @@ function logFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
         const choiceType = isRecTab ? 'RECOMMENDED' : 'ALTERNATIVE';
         log(`RESULT: 🎯 User chose ${emoji} ${engine} (${choiceType}) for "${query}" (Tab ${chosenTabId}) - ${new Date().toLocaleTimeString()} with Updated History ${JSON.stringify(categoryHistory)}`);
 
+        // save category history to chrome storage
+        saveCategoryHistory();
+        
     } catch (e) {
         log(`RESULT: 🎯 User chose tab ${chosenTabId}, but failed to parse URL: ${chosenTabUrl}`);
     }
