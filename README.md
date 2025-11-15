@@ -19,9 +19,9 @@ The recommended engine opens in your current tab; the alternate opens briefly in
 
 Queries are classified into categories using keyword heuristics:
 
-Informational, Medical/Safety → Perplexity
+Informational → Perplexity
 
-Navigational, Commercial, Real-time → Google
+Navigational, Commercial, Real-time, Medical/Safety → Google
 
 
 2️⃣ **Adaptive Learning**
