@@ -21,8 +21,8 @@ function getAndLogRecommendation(query, categoryHistory) {
 
     // keyword-based query category classification
     const tokens = tokenize(q);
-    if (length(tokens) <= 2) scores.navigational += 3;
-    if (length(tokens) > 10) scores.informational += 3;
+    if (tokens.length <= 2) scores.navigational += 3;
+    if (tokens.length > 10) scores.informational += 3;
 
     if (informationalStarts.includes(tokens[0])) scores.informational += 3;
     if (commercialStarts.includes(tokens[0])) scores.commercial += 3;
