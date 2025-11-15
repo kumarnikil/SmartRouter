@@ -8,13 +8,15 @@ const defaultCategoryMap = {
 };
 
 // TODO: replace hardcoded keywords with generalised category-specific entity recognition (NER)
+// TODO: clearly seperate "starts", "patterns" with cleaner retrival setup
 
-// generated via initial keywords manually, then expanded with ChatGPT few-shot prompting
-const questionWords = [
+// initial keywords generated manually, list expanded with ChatGPT few-shot prompting
+const informationalStarts = [
   "who", "what", "when", "where", "why", "how",
   "is", "are", "can", "does", "do", "should", 
   "could", "would", "will", "did", "may", "which", "whom", "whose"
 ];
+const commercialStarts = ["book"];
 const informationalPatterns = [
   "explain", "compare", "difference between", "pros", "cons",
   "summarize", "why does", "how does", "step by step", "how to",
@@ -62,7 +64,7 @@ const medicalPatterns = [
   "infection", "infected",
 
   // sickness / symptoms
-  "fever", "vomit", "vomiting", "diarrhea", "nausea", "dizzy",
+  "fever", "vomit", "diarrhea", "nausea", "dizzy",
   "cough", "sore throat", "runny nose", "congestion",
   "shortness of breath", "chest pain", "migraine", "headache",
   "earache", "toothache",

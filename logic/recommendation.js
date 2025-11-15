@@ -19,18 +19,24 @@ function getAndLogRecommendation(query, categoryHistory) {
         medical: 0,
     };
 
-    // question detection
-    if (questionWords.some(w => q.startsWith(w + " "))) scores.informational += 3;
+    // keyword-based query category classification
+    const tokens = tokenize(q);
+    if (informationalStarts.includes(tokens[0])) scores.informational += 3;
+    if (commercialStarts.includes(tokens[0])) scores.commercial += 3;
 
-    informationalPatterns.forEach(p => { if (q.includes(p)) scores.informational += 2; });
-    navigationalPatterns.forEach(p => { if (q.includes(p)) scores.navigational += 3; });
-    transactionalPatterns.forEach(p => { if (q.includes(p)) scores.transactional += 3; });
-    commercialPatterns.forEach(p => { if (q.includes(p)) scores.commercial += 3; });
-    realTimePatterns.forEach(p => { if (q.includes(p)) scores.realTime += 3; });
-    medicalPatterns.forEach(p => { if (q.includes(p)) scores.medical += 3; });
+    tokens.forEach((token) => {
+        if (informationalPatterns.includes(token)) scores.informational += 2;
+        if (navigationalPatterns.includes(token)) scores.navigational += 3;
+        if (transactionalPatterns.includes(token)) scores.transactional += 3;
+        if (commercialPatterns.includes(token)) scores.commercial += 3;
+        if (realTimePatterns.includes(token)) scores.realTime += 3;
+        if (medicalPatterns.includes(token)) scores.medical += 3;
+    })
+    log(`Tokens: ${tokens}, Scores ${JSON.stringify(scores)}`);
 
-    category = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b); // select highest score
-
+    const scoredCategory = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b); // select highest score
+    if (scores[scoredCategory] > 0) category = scoredCategory; // if no scores assigned, fallback to default
+        
     // *** SD SELECTION (BASED ON CATEGORY) *** //
     const defaultRec = defaultCategoryMap[category] || 'g'; // default to Google for unknown category
 
@@ -49,4 +55,8 @@ function getAndLogRecommendation(query, categoryHistory) {
 
     log(`Category: ${category}, Recommendation: ${recommendation.toUpperCase()} for "${query}"`);
     return [category, recommendation];
+}
+
+function tokenize(q) {
+  return q.toLowerCase().split(/[^a-z]+/).filter(Boolean);
 }
