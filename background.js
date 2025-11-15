@@ -1,7 +1,10 @@
 importScripts('logic/recommendation.js');
 
 const CATEGORY_HISTORY_KEY = "CATEGORY_HISTORY_KEY"
+const CSV_LOG_KEY = "CSV_LOG_KEY";
+
 let categoryHistory = {};
+let csvLogs = [];
 
 // TODO: Cleanliness - manage into seperate Tab Object
 let recTabId = null;
@@ -13,7 +16,7 @@ let altTabUrl = null;
 let tabCategory = null;
 
 // TODO: Controllable by the GUI
-let closeTimerMs = 7000;  // fallback default, 7s
+let closeTimerMs = 9000;  // fallback default, 9s
 let closeTimers = {};     // tabId to timerId
 
 // *** CHROME EVENTS HANDLING *** //s
@@ -22,12 +25,29 @@ let closeTimers = {};     // tabId to timerId
 chrome.runtime.onStartup.addListener(() => {
     log("🚀 startup event triggered");
     loadCategoryHistory();
+    loadCsvLogs();
 });
 
 // on extension installed / uploaded event (for dev-only)
 chrome.runtime.onInstalled.addListener(() => {
     log("🧩 extension installed or updated");
     loadCategoryHistory();
+    loadCsvLogs();
+});
+
+// on pop-up button click
+chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
+    if (msg.type === "GET_CSV_LOGS") {
+        sendResponse({ logs: csvLogs });
+    } else if (msg.type === "CLEAR_CSV_LOGS") {
+        csvLogs = [];
+        categoryHistory = {};
+
+        saveCsvLogs();
+        saveCategoryHistory();
+        
+        sendResponse({ success: true });
+    }
 });
 
 // on query entered 
@@ -150,10 +170,10 @@ function handleUserChoice(category, sd) {
 
 function loadCategoryHistory() {
     try {
-        chrome.storage.local.get([CATEGORY_HISTORY_KEY]).then((data) => {
+        chrome.storage.local.get([CATEGORY_HISTORY_KEY]).then(data => {
             if (data.CATEGORY_HISTORY_KEY) {
                 categoryHistory = data.CATEGORY_HISTORY_KEY;
-                log("✅ Category history loaded from storage:", JSON.stringify(categoryHistory));
+                log("✅ Loaded Category History Logs (from Storage):", JSON.stringify(categoryHistory));
 
             } else {
                 categoryHistory = {};
@@ -167,10 +187,32 @@ function loadCategoryHistory() {
     }
 }
 
-// save category history on shutdown
+function loadCsvLogs() {
+    try {
+        chrome.storage.local.get([CSV_LOG_KEY]).then(data => {
+            csvLogs = data[CSV_LOG_KEY] || [];
+            console.log("✅ Loaded CSV Logs (from Storage):", csvLogs);
+        });
+    } catch (err) {
+        console.error("Failed to load CSV Logs:", err);
+        csvLogs = [];
+    }
+}
+
 function saveCategoryHistory() {
-    chrome.storage.local.set({ CATEGORY_HISTORY_KEY: categoryHistory }, () => {
-        console.log("💾 Category history saved:", JSON.stringify(categoryHistory));
+    chrome.storage.local.set({ [CATEGORY_HISTORY_KEY]: categoryHistory }, () => {
+        // console.log("💾 Category history saved:", JSON.stringify(categoryHistory));
+    });
+}
+
+function pushAndSaveCsvLogs(csvLogRow) {
+    csvLogs.push(csvLogRow);
+    saveCsvLogs();
+}
+
+function saveCsvLogs() {
+    chrome.storage.local.set({ [CSV_LOG_KEY]: csvLogs }, () => {
+        console.log("💾 CSV Logs saved:", JSON.stringify(csvLogs));
     });
 }
 
@@ -198,6 +240,7 @@ function handleFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
         const url = new URL(chosenTabUrl);
         const hostname = url.hostname;
         const query = url.searchParams.get('q') || '';
+        const timestamp = new Date().toLocaleTimeString();
 
         // Determine engine and emoji
         let engine, emoji;
@@ -217,11 +260,23 @@ function handleFinalRecommendation(chosenTabId, chosenTabUrl, isRecTab) {
         }
 
         const choiceType = isRecTab ? 'RECOMMENDED' : 'ALTERNATIVE';
-        log(`RESULT: 🎯 User chose ${emoji} ${engine} (${choiceType}) for "${query}" (Tab ${chosenTabId}) - ${new Date().toLocaleTimeString()} with Updated History ${JSON.stringify(categoryHistory)}`);
-
-        // save category history to chrome storage
-        saveCategoryHistory();
+        log(`RESULT: 🎯 User chose ${emoji} ${engine} (${choiceType}) for "${query}" (Tab ${chosenTabId}) - ${timestamp} with Updated History ${JSON.stringify(categoryHistory)}`);
         
+        // Log structured CSV row:
+        const categoryHistoryStr = JSON.stringify(categoryHistory);
+        const row = {
+            timestamp,
+            category: tabCategory,
+            engine,
+            choiceType,
+            categoryHistoryStr
+        };
+        csvLogs.push(row);
+
+        // save category history, CSV log file to chrome storage
+        saveCategoryHistory();
+        saveCsvLogs();
+
     } catch (e) {
         log(`RESULT: 🎯 User chose tab ${chosenTabId}, but failed to parse URL: ${chosenTabUrl}`);
     }

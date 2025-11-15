@@ -4,7 +4,7 @@ const defaultCategoryMap = {
   transactional: 'g',
   commercial: 'g',
   realTime: 'g',
-  medical: 'p'
+  medical: 'g'
 };
 
 // TODO: replace hardcoded keywords with generalised category-specific entity recognition (NER)

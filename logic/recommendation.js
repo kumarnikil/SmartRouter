@@ -1,7 +1,7 @@
 importScripts('constants/intentKeywords.js');
 
-const NUM_OF_PAST_QUERIES_TO_TRIGGER_ADAPTION = 1; // number of queries processed before historical count is included
-const PAST_QUERIES_RATIO = 0.5; //
+const NUM_OF_PAST_QUERIES_TO_TRIGGER_ADAPTION = 6; // number of queries processed before historical count is included
+const PAST_QUERIES_RATIO = 0.65; //
 
 function getAndLogRecommendation(query, categoryHistory) {
     const q = query.trim().toLowerCase();
@@ -21,6 +21,9 @@ function getAndLogRecommendation(query, categoryHistory) {
 
     // keyword-based query category classification
     const tokens = tokenize(q);
+    if (length(tokens) <= 2) scores.navigational += 3;
+    if (length(tokens) > 10) scores.informational += 3;
+
     if (informationalStarts.includes(tokens[0])) scores.informational += 3;
     if (commercialStarts.includes(tokens[0])) scores.commercial += 3;
 
