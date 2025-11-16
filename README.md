@@ -1,6 +1,6 @@
 # SmartRouter – Intelligent Search Routing for Chrome
 
-SmartRouter intelligently routes search queries between **Google** and **Perplexity AI** based on the query’s intent and structure. It analyzes the text you type — length, phrasing, and keywords — then predicts which engine will deliver the best result.  
+SmartRouter intelligently routes search queries between **Google** and **Perplexity AI** based on the query’s intent and structure. It analyzes the text you type, length, phrasing, and keywords, then predicts which engine will deliver the best result.  
 
 The recommended engine opens in your current tab; the alternate opens briefly in the background and auto-closes after a short delay.
 
