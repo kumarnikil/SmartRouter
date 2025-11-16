@@ -21,12 +21,14 @@ function getAndLogRecommendation(query, categoryHistory) {
 
     // keyword-based query category classification
     const tokens = tokenize(q);
+
+    // length of query based categorization
     if (tokens.length <= 2) scores.navigational += 3;
     if (tokens.length > 10) scores.informational += 3;
 
+    // keywords based categorization
     if (informationalStarts.includes(tokens[0])) scores.informational += 3;
     if (commercialStarts.includes(tokens[0])) scores.commercial += 3;
-
     tokens.forEach((token) => {
         if (informationalPatterns.includes(token)) scores.informational += 2;
         if (navigationalPatterns.includes(token)) scores.navigational += 3;
@@ -35,6 +37,7 @@ function getAndLogRecommendation(query, categoryHistory) {
         if (realTimePatterns.includes(token)) scores.realTime += 3;
         if (medicalPatterns.includes(token)) scores.medical += 3;
     })
+
     log(`Tokens: ${tokens}, Scores ${JSON.stringify(scores)}`);
 
     const scoredCategory = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b); // select highest score
