@@ -16,7 +16,7 @@ let altTabUrl = null;
 let tabCategory = null;
 
 // TODO: Controllable by the GUI
-let closeTimerMs = 9000;  // fallback default, 9s
+let closeTimerMs = 11000;  // fallback default, 11s
 let closeTimers = {};     // tabId to timerId
 
 // *** CHROME EVENTS HANDLING *** //s
