@@ -51,7 +51,6 @@ Output format: [category, "g" | "p"]
 | Comparison | `gpt-4 vs claude 3 performance` | Perplexity |
 | Factual | `tesla stock price` | Google |
 | Research-like | `explain reinforcement learning with examples` | Perplexity |
-| Local intent | `coffee shops near me` | Google |
 
 ---
 
